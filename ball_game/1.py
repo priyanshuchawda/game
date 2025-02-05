@@ -59,25 +59,43 @@ lives = 3
 paused = False
 game_over = False
 
-# Restart button properties (for game over screen)
+# Timing variables (in milliseconds)
+start_time = pygame.time.get_ticks()
+final_time = None  # Will store the time when the game ends
+
+# Option for high speed ball
+high_speed_mode = False
+
+# Button properties
 restart_button = pygame.Rect(WIDTH // 2 - 50, HEIGHT // 2 + 50, 100, 50)
-# Pause button properties (always visible when game is not over)
 pause_button = pygame.Rect(WIDTH - 120, 10, 100, 40)
+# High speed toggle button (positioned below the pause button)
+speed_button = pygame.Rect(WIDTH - 120, 60, 100, 40)
 
 def reset_ball_and_paddle():
     global ball_x, ball_y, ball_dx, ball_dy, paddle
     ball_x, ball_y = WIDTH // 2, HEIGHT // 2
-    ball_dx = random.choice([-4, 4])
-    ball_dy = -4
+    base_speed = 6 if high_speed_mode else 4
+    ball_dx = random.choice([-base_speed, base_speed])
+    ball_dy = -base_speed
     paddle.x = WIDTH // 2 - paddle_width // 2
 
 def reset_game():
-    global lives, game_over, paused
+    global lives, game_over, paused, start_time, final_time
     lives = 3
     game_over = False
     paused = False
+    final_time = None
     reset_ball_and_paddle()
     create_bricks()
+    start_time = pygame.time.get_ticks()
+
+def update_ball_speed():
+    """Update the current ball speed based on the high_speed_mode flag while preserving direction."""
+    global ball_dx, ball_dy
+    base_speed = 6 if high_speed_mode else 4
+    ball_dx = base_speed if ball_dx > 0 else -base_speed
+    ball_dy = base_speed if ball_dy > 0 else -base_speed
 
 # Main game loop
 running = True
@@ -104,6 +122,11 @@ while running:
             # Pause button (only when game is active)
             if not game_over and pause_button.collidepoint(mouse_pos):
                 paused = not paused
+            # Speed toggle button (only when game is active)
+            if not game_over and speed_button.collidepoint(mouse_pos):
+                high_speed_mode = not high_speed_mode
+                # Update ball speed immediately based on the new mode
+                update_ball_speed()
 
     # Only update game logic if not paused and not game over
     if not paused and not game_over:
@@ -141,6 +164,9 @@ while running:
                 reset_ball_and_paddle()
             else:
                 game_over = True
+                # Record final time only once when game is over
+                if final_time is None:
+                    final_time = pygame.time.get_ticks()
 
         # Paddle collision (simple check: ball hitting paddle from above)
         if paddle.collidepoint(ball_x, ball_y + ball_radius):
@@ -176,6 +202,13 @@ while running:
         pause_text_rect = pause_text.get_rect(center=pause_button.center)
         screen.blit(pause_text, pause_text_rect)
 
+        # Draw the speed toggle button
+        pygame.draw.rect(screen, BLUE, speed_button)
+        speed_text = "Normal" if high_speed_mode else "High"
+        speed_label = font.render(speed_text, True, WHITE)
+        speed_label_rect = speed_label.get_rect(center=speed_button.center)
+        screen.blit(speed_label, speed_label_rect)
+
     # Pause overlay
     if paused and not game_over:
         pause_overlay = big_font.render("Paused", True, GREEN)
@@ -187,6 +220,12 @@ while running:
         over_text = big_font.render("Game Over", True, RED)
         over_rect = over_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
         screen.blit(over_text, over_rect)
+        
+        # Calculate and display elapsed time using the stored final_time
+        elapsed_time = (final_time - start_time) / 1000  # seconds
+        time_text = font.render(f"Time: {elapsed_time:.2f} seconds", True, WHITE)
+        time_rect = time_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(time_text, time_rect)
 
         pygame.draw.rect(screen, BLUE, restart_button)
         restart_text = font.render("Restart", True, WHITE)
