@@ -7,7 +7,8 @@ pygame.init()
 
 # Screen dimensions
 WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+# Set the display mode to full screen using the FULLSCREEN flag
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 pygame.display.set_caption("Block Breaker Game")
 clock = pygame.time.Clock()
 
